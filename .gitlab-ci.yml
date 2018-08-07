@@ -1,0 +1,62 @@
+.test: &test
+    before_script:
+        - apt-get update
+        - apt-get -y install unzip git jpegoptim libjpeg-progs optipng g++ gnupg wget
+
+        # php deps
+        - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+        - touch /usr/local/etc/php/php.ini
+        - yes '' | pecl install --force apcu || echo
+        - docker-php-ext-enable apcu
+        - composer install
+
+        # node deps
+        - curl -sL https://deb.nodesource.com/setup_8.x | bash -
+        - apt-get -y install npm nodejs
+        - npm install --prefix vendor/uglifyjs uglify-js@1
+        - npm install
+        - export UGLIFYJS_BIN=vendor/uglifyjs/node_modules/uglify-js/bin/uglifyjs
+        - export AUTOPREFIXER_BIN=node_modules/.bin/autoprefixer-cli
+
+        # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=863199
+        - mkdir -p /usr/share/man/man1
+
+        # java deps
+        - apt-get -y install openjdk-8-jre-headless
+        - mkdir -p vendor/java
+        - wget http://dl.google.com/closure-compiler/compiler-latest.zip && unzip compiler-latest.zip -d vendor/java/compiler && mv vendor/java/compiler/closure-compiler-*.jar vendor/java/compiler/compiler.jar
+        - export CLOSURE_JAR=vendor/java/compiler/compiler.jar
+        - wget https://github.com/google/closure-stylesheets/releases/download/v1.4.0/closure-stylesheets.jar --output-document=vendor/java/closure-stylesheets.jar
+        - export GSS_JAR=vendor/java/closure-stylesheets.jar
+        - wget https://github.com/downloads/nzakas/cssembed/cssembed-0.4.5.jar --output-document=vendor/java/cssembed.jar
+        - export CSSEMBED_JAR=vendor/java/cssembed.jar
+        - wget https://github.com/yui/yuicompressor/releases/download/v2.4.8/yuicompressor-2.4.8.jar --output-document=vendor/java/yuicompressor.jar
+        - export YUI_COMPRESSOR_JAR=vendor/java/yuicompressor.jar
+
+        # ruby deps
+        - apt-get -y install bundler
+        - bundle install
+        - export SPROCKETS_LIB=$(bundle show sprockets)/lib
+
+        # other deps
+
+        - wget -q https://storage.googleapis.com/dart-archive/channels/stable/release/1.24.3/sdk/dartsdk-linux-x64-release.zip && unzip dartsdk-linux-x64-release.zip && mv dart-sdk vendor
+        - export DART_BIN=vendor/dart-sdk/bin/dart2js
+
+        - wget -q http://static.jonof.id.au/dl/kenutils/pngout-20130221-linux.tar.gz && tar -xzf pngout-20130221-linux.tar.gz && mv pngout-20130221-linux vendor
+        - export PNGOUT_BIN=vendor/pngout-20130221-linux/x86_64/pngout
+
+    script:
+        - php -dapc.enable_cli=1 ./bin/phpunit -v
+        - composer require --no-update 'symfony/lts:^3' && composer update
+        - php -dapc.enable_cli=1 ./bin/phpunit -v
+        - composer require --no-update 'symfony/lts:^2' && composer update
+        - php -dapc.enable_cli=1 ./bin/phpunit -v
+
+test:7.1:
+    <<: *test
+    image: php:7.1
+
+test:7.2:
+    <<: *test
+    image: php:7.2

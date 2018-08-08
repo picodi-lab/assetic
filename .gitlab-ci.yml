@@ -13,6 +13,8 @@
         # node deps
         - curl -sL https://deb.nodesource.com/setup_8.x | bash -
         - apt-get -y install npm nodejs
+        - node -v
+        - npm -v
         - npm install --prefix vendor/uglifyjs uglify-js@1
         - npm install
         - export UGLIFYJS_BIN=vendor/uglifyjs/node_modules/uglify-js/bin/uglifyjs
